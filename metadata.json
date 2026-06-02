@@ -1,0 +1,6 @@
+{
+  "name": "欧拉的时空侦探",
+  "description": "一款互动游戏化教育应用，通过一笔画问题向中小学生介绍哥尼斯堡七桥问题的图论本质。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
