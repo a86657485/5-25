@@ -9,9 +9,10 @@ interface GraphCanvasProps {
   onEdgeClick?: (edgeId: string) => void;
   showLabels?: boolean;
   theme?: 'map' | 'abstract' | 'blueprint' | 'circuit' | 'museum';
+  highlightedNodeId?: string | null;
 }
 
-export default function GraphCanvas({ graph, gameState, onNodeClick, onEdgeClick, showLabels = false, theme = 'abstract' }: GraphCanvasProps) {
+export default function GraphCanvas({ graph, gameState, onNodeClick, onEdgeClick, showLabels = false, theme = 'abstract', highlightedNodeId }: GraphCanvasProps) {
   // Helpers to get pixel positions from % (SVG viewBox 0 0 1000 1000)
   const px = (pct: number) => pct * 10;
   
@@ -41,6 +42,16 @@ export default function GraphCanvas({ graph, gameState, onNodeClick, onEdgeClick
 
   const getEdgeStyle = (edge: GraphEdge) => {
     const visited = gameState.visitedEdges.includes(edge.id);
+    const customColor = edge.color;
+
+    if (customColor) {
+      return {
+        stroke: visited ? '#a855f7' : customColor,
+        strokeWidth: visited ? 18 : 12,
+        strokeLinecap: 'round' as const
+      };
+    }
+
     switch (theme) {
       case 'map':
         return {
@@ -71,7 +82,7 @@ export default function GraphCanvas({ graph, gameState, onNodeClick, onEdgeClick
       default:
         return {
           stroke: visited ? '#a855f7' : '#4b5563', // purple / gray
-          strokeWidth: visited ? 12 : 8,
+          strokeWidth: visited ? 18 : 12,
           strokeLinecap: 'round' as const
         };
     }
@@ -79,6 +90,7 @@ export default function GraphCanvas({ graph, gameState, onNodeClick, onEdgeClick
 
   const getNodeStyle = (node: GraphNode) => {
     const isCurrent = gameState.currentNode === node.id;
+    const isHighlighted = highlightedNodeId === node.id;
     const isVisited = gameState.visitedEdges.some(e => 
       (graph.edges.find(ge => ge.id === e)?.n1 === node.id) || 
       (graph.edges.find(ge => ge.id === e)?.n2 === node.id)
@@ -93,31 +105,31 @@ export default function GraphCanvas({ graph, gameState, onNodeClick, onEdgeClick
       case 'blueprint':
         return {
           fill: isCurrent ? '#60a5fa' : '#1e3a8a',
-          stroke: '#93c5fd',
-          strokeWidth: 4,
+          stroke: isHighlighted ? '#f59e0b' : '#93c5fd', // highlight with amber
+          strokeWidth: isHighlighted ? 8 : 4,
           r: 25,
         };
       case 'circuit':
         return {
           fill: isCurrent ? '#34d399' : '#064e3b',
-          stroke: '#10b981',
-          strokeWidth: 4,
+          stroke: isHighlighted ? '#f59e0b' : '#10b981',
+          strokeWidth: isHighlighted ? 8 : 4,
           r: 30,
         };
       case 'museum':
         return {
           fill: isCurrent ? '#fcd34d' : '#78350f',
-          stroke: '#fbbf24',
-          strokeWidth: 4,
+          stroke: isHighlighted ? '#ef4444' : '#fbbf24',
+          strokeWidth: isHighlighted ? 8 : 4,
           r: 30,
         };
       case 'abstract':
       default:
          return {
           fill: isCurrent ? '#d8b4fe' : '#7e22ce',
-          stroke: isCurrent ? '#ffffff' : 'transparent',
-          strokeWidth: 4,
-          r: 45,
+          stroke: isHighlighted ? '#f59e0b' : (isCurrent ? '#ffffff' : 'transparent'),
+          strokeWidth: isHighlighted ? 12 : 6,
+          r: 55,
         };
     }
   };

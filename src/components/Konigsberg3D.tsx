@@ -44,9 +44,9 @@ function Bridge({ edge, visited, onClick }: BridgeProps) {
       <mesh>
         <tubeGeometry args={[curve, 24, 0.4, 8, false]} />
         <meshStandardMaterial 
-          color={visited ? '#fbbf24' : (hovered ? '#b45309' : '#78350f')} 
-          metalness={0.2} 
-          roughness={0.8} 
+          color={visited ? '#fbbf24' : (hovered ? '#f97316' : '#ea580c')} 
+          metalness={0.1} 
+          roughness={0.9} 
           transparent={visited}
           opacity={visited ? 0.3 : 1}
         />
@@ -81,8 +81,8 @@ function Island({ node, isCurrent, onClick }: IslandProps) {
         onPointerOut={(e) => { e.stopPropagation(); setHover(false); }}
         position={[0, 0.2, 0]}
       >
-        <cylinderGeometry args={[2.5, 2.5, 0.4, 32]} />
-        <meshStandardMaterial color={isCurrent ? '#fef08a' : (hovered ? '#86efac' : '#22c55e')} />
+        <cylinderGeometry args={[2.8, 3.0, 0.6, 32]} />
+        <meshStandardMaterial color={isCurrent ? '#fef08a' : (hovered ? '#6ee7b7' : '#10b981')} />
       </mesh>
 
       {/* Invisible larger hit target */}
@@ -98,7 +98,7 @@ function Island({ node, isCurrent, onClick }: IslandProps) {
         </mesh>
       )}
 
-      <Html position={[0, 1.5, 0]} center sprite>
+      <Html position={[0, 2.5, 0]} center sprite zIndexRange={[100, 0]}>
         <div className="bg-slate-900/80 text-white px-3 py-1 rounded-full text-sm font-bold shadow-xl border border-slate-600 backdrop-blur-sm select-none pointer-events-none">
           {node.label}
         </div>
@@ -208,24 +208,24 @@ function Player({ gameState }: { gameState: GameState }) {
   return (
     <group ref={ref} position={[0, 0, 0]}>
       <mesh position={[0, 0.4, 0]} castShadow>
-        <capsuleGeometry args={[0.2, 0.4, 4, 16]} />
-        <meshStandardMaterial color="#ef4444" />
+        <capsuleGeometry args={[0.3, 0.5, 4, 16]} />
+        <meshStandardMaterial color="#fb7185" />
       </mesh>
       <mesh position={[0, 0.9, 0]} castShadow>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshStandardMaterial color="#ef4444" />
+        <sphereGeometry args={[0.35, 16, 16]} />
+        <meshStandardMaterial color="#f43f5e" />
       </mesh>
-      <mesh position={[0.08, 0.95, 0.16]} castShadow>
-        <sphereGeometry args={[0.04, 8, 8]} />
+      <mesh position={[0.15, 1.0, 0.28]} castShadow>
+        <sphereGeometry args={[0.06, 8, 8]} />
         <meshStandardMaterial color="#111827" />
       </mesh>
-      <mesh position={[-0.08, 0.95, 0.16]} castShadow>
-        <sphereGeometry args={[0.04, 8, 8]} />
+      <mesh position={[-0.15, 1.0, 0.28]} castShadow>
+        <sphereGeometry args={[0.06, 8, 8]} />
         <meshStandardMaterial color="#111827" />
       </mesh>
-      <mesh position={[0, 0.5, -0.2]} castShadow>
-        <boxGeometry args={[0.3, 0.4, 0.15]} />
-        <meshStandardMaterial color="#3b82f6" />
+      <mesh position={[0, 0.5, -0.3]} castShadow>
+        <boxGeometry args={[0.4, 0.5, 0.2]} />
+        <meshStandardMaterial color="#818cf8" />
       </mesh>
     </group>
   );
@@ -246,9 +246,9 @@ export default function Konigsberg3D({ gameState, onNodeClick, onEdgeClick, came
       <directionalLight position={[10, 20, 5]} intensity={1.5} castShadow />
       
       {/* River */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#0284c7" metalness={0.8} roughness={0.1} />
+        <meshStandardMaterial color="#0ea5e9" metalness={0.1} roughness={0.4} />
       </mesh>
 
       {/* Islands */}

@@ -3,24 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import GraphCanvas from '../components/GraphCanvas';
 import { cityGraph, circuitGraph, museumGraph } from '../data/graphs';
 import { useGraphGame } from '../hooks/useGraphGame';
-import { Truck, Undo2, Map, PartyPopper, Cpu, Shield, HelpCircle, X } from 'lucide-react';
+import { PenTool, Truck, Undo2, RefreshCcw, Map, PartyPopper, Cpu, Shield, HelpCircle, X } from 'lucide-react';
 
 interface Props {
   onNext: () => void;
 }
 
 const SCENARIOS = [
-  {
-    id: 'city',
-    graph: cityGraph,
-    theme: 'blueprint' as const,
-    title: '城市规划师',
-    icon: Map,
-    indicator: Truck,
-    desc: '规划洒水车路线，务必不能在同一条街道走两次。',
-    hint: '提示：寻找全图的奇点。欧拉定律告诉我们，如果有且仅有两个奇点，必须从其中一个出发，到另一个结束。先找找哪两个路口连着奇数条街道？',
-    colors: { bg: 'bg-[#f8fafc]', headerBg: 'bg-white', boardBg: 'bg-slate-200', text: 'text-blue-600', primary: 'bg-blue-600', success: 'bg-blue-500' }
-  },
   {
     id: 'circuit',
     graph: circuitGraph,
@@ -42,6 +31,17 @@ const SCENARIOS = [
     desc: '设计一条不重复的巡航路线，走过所有连廊。仔细观察，所有点都是偶点喔！',
     hint: '提示：数过这里的连廊了吗？你会发现所有的区域都是偶点。既然有0个奇点，那就意味着你可以从任意一个点出发，最后还会回到原点！',
     colors: { bg: 'bg-[#291911]', headerBg: 'bg-[#1a0e08]', boardBg: 'bg-[#1a0e08]', text: 'text-[#fbbf24]', primary: 'bg-[#d97706]', success: 'bg-amber-600' }
+  },
+  {
+    id: 'city',
+    graph: cityGraph,
+    theme: 'blueprint' as const,
+    title: '城市规划师',
+    icon: Map,
+    indicator: Truck,
+    desc: '规划洒水车路线，务必不能在同一条街道走两次。',
+    hint: '提示：寻找全图的奇点。欧拉定律告诉我们，如果有且仅有两个奇点，必须从其中一个出发，到另一个结束。先找找哪两个路口连着奇数条街道？',
+    colors: { bg: 'bg-[#f8fafc]', headerBg: 'bg-white', boardBg: 'bg-slate-200', text: 'text-blue-600', primary: 'bg-blue-600', success: 'bg-blue-500' }
   }
 ];
 
@@ -67,9 +67,60 @@ export default function Level4({ onNext }: Props) {
 }
 
 function Level4Scene({ config, onComplete, isLast }: { config: typeof SCENARIOS[0], onComplete: () => void, isLast: boolean }) {
-  const { gameState, handleNodeClick, handleEdgeClick, undo, isComplete } = useGraphGame(config.graph);
+  const [localGraph, setLocalGraph] = useState(config.graph);
+  
+  useEffect(() => {
+    setLocalGraph(config.graph);
+  }, [config.graph]);
+
+  const { gameState, handleNodeClick, handleEdgeClick, undo, reset, isComplete } = useGraphGame(localGraph);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [isBuildingRoad, setIsBuildingRoad] = useState(false);
+  const [buildStartNode, setBuildStartNode] = useState<string | null>(null);
+
+  const hasCustomEdge = localGraph.edges.some(e => e.id.startsWith('custom_'));
+
+  const onNodeClick = (nodeId: string) => {
+    if (isComplete) return;
+    
+    if (isBuildingRoad) {
+      if (!buildStartNode) {
+        setBuildStartNode(nodeId);
+      } else if (buildStartNode !== nodeId) {
+        // Calculate curve offset to avoid overlapping with existing roads
+        const nodeA = [buildStartNode, nodeId].sort()[0];
+        const nodeB = [buildStartNode, nodeId].sort()[1];
+        
+        const existingEdges = localGraph.edges.filter(
+          e => (e.n1 === nodeA && e.n2 === nodeB) || (e.n1 === nodeB && e.n2 === nodeA)
+        );
+
+        let curveOffset: number | undefined = undefined;
+        if (existingEdges.length > 0) {
+          const sign = existingEdges.length % 2 === 0 ? -1 : 1;
+          const magnitude = Math.ceil(existingEdges.length / 2) * 5; // bigger curve
+          const directionSign = (buildStartNode === nodeA) ? 1 : -1;
+          curveOffset = sign * magnitude * directionSign;
+        }
+
+        // Build road!
+        setLocalGraph(prev => ({
+          ...prev,
+          edges: [
+            ...prev.edges,
+            { id: `custom_${Date.now()}`, n1: buildStartNode, n2: nodeId, curveOffset }
+          ]
+        }));
+        setIsBuildingRoad(false);
+        setBuildStartNode(null);
+        reset(); // reset game state since graph changed
+      }
+      return;
+    }
+    
+    handleNodeClick(nodeId);
+  };
 
   useEffect(() => {
     if (isComplete) {
@@ -95,6 +146,24 @@ function Level4Scene({ config, onComplete, isLast }: { config: typeof SCENARIOS[
             <h2 className="text-xl font-black tracking-tight">{config.title}</h2>
           </div>
           <div className="flex gap-2">
+            {config.id === 'city' && !hasCustomEdge && (
+              <button 
+                onClick={() => { setIsBuildingRoad(!isBuildingRoad); setBuildStartNode(null); }}
+                className={`p-2 rounded-full transition-colors shadow-sm ${isBuildingRoad ? 'bg-blue-500 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                title="修建唯一一条新街道"
+              >
+                <PenTool size={20} />
+              </button>
+            )}
+            {config.id === 'city' && hasCustomEdge && (
+              <button 
+                onClick={() => { setLocalGraph(config.graph); reset(); }}
+                className={`p-2 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-600 transition-colors shadow-sm`}
+                title="拆除新街道并重试"
+              >
+                <RefreshCcw size={20} />
+              </button>
+            )}
             <button 
               onClick={() => setShowHint(true)}
               className={`p-2 rounded-full ${config.theme === 'blueprint' ? 'bg-amber-100 hover:bg-amber-200 text-amber-600' : 'bg-amber-500/20 hover:bg-amber-500/40 text-amber-400'} transition-colors shadow-sm`}
@@ -118,14 +187,22 @@ function Level4Scene({ config, onComplete, isLast }: { config: typeof SCENARIOS[
         {/* Subtle grid background */}
         {config.theme === 'blueprint' && <div className="absolute inset-0 bg-grid-slate-300/[0.4] bg-[length:20px_20px]" />}
         
-        <div className={`absolute inset-4 md:inset-6 ${config.theme === 'blueprint' ? 'bg-white/80 border-white' : 'bg-black/40 border-black/50'} rounded-3xl border-4 shadow-xl backdrop-blur-sm overflow-hidden`}>
+        <div className={`absolute inset-4 md:inset-6 ${config.theme === 'blueprint' ? 'bg-white/80 border-white' : 'bg-black/40 border-black/50'} rounded-3xl border-4 shadow-xl backdrop-blur-sm overflow-hidden ${isBuildingRoad ? 'cursor-crosshair' : ''}`}>
+          {isBuildingRoad && (
+            <div className="absolute top-4 left-0 right-0 text-center z-30 pointer-events-none">
+              <span className="bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg">
+                {buildStartNode ? '请点击第二个点完成修路' : '请点击第一个点'}
+              </span>
+            </div>
+          )}
           <GraphCanvas 
-            graph={config.graph} 
+            graph={localGraph} 
             gameState={gameState} 
-            onNodeClick={isComplete ? () => {} : handleNodeClick}
-            onEdgeClick={isComplete ? undefined : handleEdgeClick}
+            onNodeClick={onNodeClick}
+            onEdgeClick={isComplete || isBuildingRoad ? undefined : handleEdgeClick}
             theme={config.theme}
             showLabels
+            highlightedNodeId={isBuildingRoad ? buildStartNode : undefined}
           />
         </div>
 

@@ -14,6 +14,7 @@ export interface GraphEdge {
   n1: string; // id of node 1
   n2: string; // id of node 2
   curveOffset?: number; // For drawing multiple edges between same nodes
+  color?: string; // Optional custom color for the edge
 }
 
 export interface GraphData {
