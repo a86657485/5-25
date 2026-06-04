@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, XCircle, Undo2, RefreshCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, Undo2, RefreshCcw, X } from 'lucide-react';
 import GraphCanvas from '../components/GraphCanvas';
 import { konigsbergGraph, envelopeGraph } from '../data/graphs';
 import { useGraphGame } from '../hooks/useGraphGame';
@@ -9,21 +9,45 @@ interface Props {
   onNext: () => void;
 }
 
+
+
+const STORAGE_KEY = 'level3_progress';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function saveState(state: Record<string, unknown>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {}
+}
+
 export default function Level3({ onNext }: Props) {
-  const [step, setStep] = useState(0); 
+  const saved = loadState();
+  const [step, setStep] = useState(saved?.step ?? 0); 
   // 0: Intro to Odd/Even
   // 1: Envelope Graph - Find Odd Nodes
   // 2: The Rule Reveal
   // 3: Apply to Konigsberg
   // 4: Modify Konigsberg
 
-  const [foundOddNodes, setFoundOddNodes] = useState<string[]>([]);
+  const [foundOddNodes, setFoundOddNodes] = useState<string[]>(saved?.foundOddNodes ?? []);
   const [errorVisible, setErrorVisible] = useState(false);
+  const [videoWatched, setVideoWatched] = useState(saved?.videoWatched ?? false);
+
+
+  const [showVideo, setShowVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Modification Mode State
-  const [modifiedGraph, setModifiedGraph] = useState(konigsbergGraph);
-  const [modStep, setModStep] = useState(0); // 0=del, 1=add_node1, 2=add_node2, 3=play
-  const [addN1, setAddN1] = useState<string | null>(null);
+  const [modifiedGraph, setModifiedGraph] = useState(saved?.modifiedGraph ? { ...konigsbergGraph, ...saved.modifiedGraph } : konigsbergGraph);
+  const [modStep, setModStep] = useState(saved?.modStep ?? 0); // 0=del, 1=add_node1, 2=add_node2, 3=play
+  const [addN1, setAddN1] = useState<string | null>(saved?.addN1 ?? null);
 
   const { 
     gameState: modGameState, 
@@ -33,6 +57,15 @@ export default function Level3({ onNext }: Props) {
     reset: resetModGame,
     undo: undoModGame
   } = useGraphGame(modifiedGraph);
+
+  // Persist state to localStorage on changes
+  useEffect(() => {
+    saveState({
+      step, foundOddNodes, videoWatched,
+      modifiedGraph: { nodes: modifiedGraph.nodes, edges: modifiedGraph.edges },
+      modStep, addN1,
+    });
+  }, [step, foundOddNodes, videoWatched, modifiedGraph, modStep, addN1]);
 
   const handleEnvelopeNodeClick = (id: string) => {
     // Envelope odd nodes are 'bl' and 'br'
@@ -183,7 +216,7 @@ export default function Level3({ onNext }: Props) {
                 <p className="text-3xl font-black text-emerald-600 mt-4 mb-2">0 <span className="text-lg">或</span> 2</p>
                 <p className="text-lg font-bold text-emerald-800">个奇点。</p>
               </div>
-              <button onClick={() => setStep(3)} className="bg-slate-800 text-white font-bold px-8 py-4 rounded-xl w-full max-w-sm hover:bg-slate-700 shadow-xl">应用到哥尼斯堡七桥</button>
+              <button onClick={() => { if (videoWatched) { setStep(3); } else { setShowVideo(true); } }} className="bg-slate-800 text-white font-bold px-8 py-4 rounded-xl w-full max-w-sm hover:bg-slate-700 shadow-xl">应用到哥尼斯堡七桥</button>
             </motion.div>
           )}
 
@@ -299,6 +332,35 @@ export default function Level3({ onNext }: Props) {
                   <button onClick={onNext} className="bg-slate-900 shadow-2xl hover:bg-slate-800 transition-colors text-white font-bold py-4 px-6 text-lg rounded-xl w-full mx-auto block max-w-sm">前往终极测试</button>
                 </motion.div>
               )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showVideo && (
+            <motion.div
+              key="video-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center"
+            >
+              {videoWatched && (
+                <button
+                  onClick={() => { setVideoWatched(true); setShowVideo(false); setStep(3); }}
+                  className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/20 hover:bg-white/40 transition-colors text-white"
+                >
+                  <X size={24} />
+                </button>
+              )}
+              <video
+                ref={videoRef}
+                src="/视频导入.mp4"
+                className="max-w-full max-h-full rounded-lg shadow-2xl"
+                controls={false}
+                autoPlay
+                onEnded={() => { setVideoWatched(true); setShowVideo(false); setStep(3); }}
+              />
             </motion.div>
           )}
         </AnimatePresence>
