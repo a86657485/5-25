@@ -97,6 +97,7 @@ export default function Intro({ onNext }: Props) {
       >
         前往哥尼斯堡 <ArrowRight size={20} />
       </motion.button>
+      </div>
     </motion.div>
   );
 }
