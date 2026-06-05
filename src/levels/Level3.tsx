@@ -355,7 +355,7 @@ export default function Level3({ onNext }: Props) {
               )}
               <video
                 ref={videoRef}
-                src="/视频导入.mp4"
+                src="/视频导入_裁剪.mp4"
                 className="max-w-full max-h-full rounded-lg shadow-2xl"
                 controls={false}
                 autoPlay
